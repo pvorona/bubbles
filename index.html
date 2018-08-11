@@ -20,7 +20,7 @@
 
         @keyframes a-main {
             from {
-                fill: hsla(356, 77%, 90%, .1);
+                fill: transparent;
             }
             to {
                 fill: #D31B26;
@@ -116,7 +116,8 @@
             .force("link", d3.forceLink(links).distance(link => link.source.r + link.target.r + 35))
             // .force("link", d3.forceLink(links).distance(200))
             // .force('collide', d3.forceCollide(d => d.r).strength(2))
-            .force('collide', d3.forceCollide(d => d.r))
+            // .force('collide', d3.forceCollide(d => d.r))
+            .force('collide', d3.forceCollide(d => d.r + 20))
             // .force("x", d3.forceX())
             // .force("y", d3.forceY())
             .alphaTarget(1)
