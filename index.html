@@ -7,60 +7,217 @@
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.5.0/d3.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-force/1.1.0/d3-force.js"></script>
-
+    <script src="https://unpkg.com/d3-force-surface/dist/d3-force-surface.min.js"></script>
     <style>
         .circle {
-            fill: #D31B26;
+            will-change: transform;
             /*animation: a-main 1s;*/
             /*transition: transform .2s;*/
         }
 
+        .circle-0 {
+            fill: red;
+        }
+
+        .circle-1 {
+            fill: black;
+        }
+
+        .circle-2 {
+            fill: blue;
+        }
+
+        .circle-3 {
+            fill: #D31B26;
+        }
+
         .main {
+            /*animation: a-main infinite 2s alternate;*/
         }
 
         @keyframes a-main {
             from {
-                fill: transparent;
+                transform: skewX(10deg);
             }
             to {
-                fill: #D31B26;
+                transform: skewX(-10deg);
+            }
+        }
+
+        .canvas {
+            will-change: filter;
+            /*animation: a-blur-in 5s;*/
+        }
+
+        @keyframes a-blur-in {
+            from {
+                filter: blur(5px);
+            }
+
+            to {
+                filter: none;
+            }
+        }
+
+        .galaxy {
+            fill: darkblue;
+            opacity: .2;
+        }
+
+        .rotate {
+            animation: a-circle-rotate infinite 240s linear;
+        }
+
+        @keyframes a-circle-rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
             }
         }
     </style>
 
-    <svg width="1240" height="800">
+    <svg width="1440" height="800" class="canvas">
 
         <defs>
           <filter id="goo">
               <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="20" />
-              <!-- <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 200 -70" result="goo" /> -->
               <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 200 -90" result="goo" />
-              <!-- <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 50 -30" result="goo" /> -->
               <feBlend in2="goo" in="SourceGraphic" result="mix" />
           </filter>
         </defs>
 
-        <g id="bubbles" style="filter: url(#goo);">
-            <circle r="90"  class="circle" />
-            <circle r="100" class="circle" />
-            <circle r="140" class="circle main" />
-            <circle r="70"  class="circle" />
-            <circle r="30"  class="circle" />
-            <circle r="40"  class="circle" />
-            <circle r="20"  class="circle" />
-            <circle r="60"  class="circle" />
-        </g>
+        <!-- <g id="bubbles" style="filter: url(#goo);"> -->
+            <!-- <circle r="90"  class="circle" /> -->
+            <!-- <circle r="100" class="circle" /> -->
+            <!-- <circle r="140" class="circle main" /> -->
+            <!-- <circle r="70"  class="circle" /> -->
+            <!-- <circle r="30"  class="circle" /> -->
+            <!-- <circle r="40"  class="circle" /> -->
+            <!-- <circle r="20"  class="circle" /> -->
+            <!-- <circle r="60"  class="circle" /> -->
+        <!-- </g> -->
+        <!-- <g> -->
+            <!-- <circle r="150" class="galaxy" /> -->
+            <!-- <circle r="150" class="galaxy" /> -->
+            <!-- <circle r="200" class="galaxy" /> -->
+            <!-- <circle r="100" class="galaxy" /> -->
+        <!-- </g> -->
     </svg>
     <script>
+        const canvas = { width: 1440, height: 800 }
+
+        const galaxies = [
+            { r: 150,  nodeCount: 3, x: canvas.width / 2, y: canvas.height / 2 },
+            { r: 150,  nodeCount: 6, x: canvas.width / 2, y: canvas.height / 2 },
+            { r: 200,  nodeCount: 7, x: canvas.width / 2, y: canvas.height / 2 },
+            { r: 100,  nodeCount: 4, x: canvas.width / 2, y: canvas.height / 2 },
+        ]
+        const galaxiesLinks = [
+            { source: 0, target: 1 },
+            { source: 0, target: 2 },
+            { source: 0, target: 3 },
+            { source: 1, target: 2 },
+            { source: 1, target: 3 },
+            { source: 2, target: 3 },
+        ]
+        const surfaces = [
+            { from: { x: 0, y: 0 }, to: { x: canvas.width, y: 0 }},
+            { from: { x: 0, y: canvas.height }, to: { x: canvas.width, y: canvas.height }},
+            { from: { x: 0, y: 0 }, to: { x: 0, y: canvas.height }},
+            { from: { x: canvas.width, y: 0 }, to: { x: canvas.width, y: canvas.height }},
+        ]
+        const galaxiesSimulation = d3.forceSimulation(galaxies)
+            .force('center', d3.forceCenter(canvas.width / 2, canvas.height / 2))
+            .force('surface', d3.forceSurface().surfaces(surfaces).radius(d => d.r))
+            .force('charge', d3.forceManyBody().strength(d => -2 * d.r))
+            .force('collide', d3.forceCollide(205))
+            // .force("charge", d3.forceManyBody().strength(-100))
+            // .force("link", d3.forceLink(galaxiesLinks).distance(link => link.source.r + link.target.r + 200))
+            // .alphaDecay(1 - Math.pow(0.001, 1 / 300))
+            .velocityDecay(0.9)
+            // .on('tick', galaxiesTicked);
+
+        for (let i = 0; i < 300; i++) { galaxiesSimulation.tick() }
+
+            // galaxiesDomNodes = d3
+            //     .selectAll('circle.galaxy')
+            //     .data(galaxies)
+
+            // function galaxiesTicked () {
+            //     galaxiesDomNodes.attr('transform', d => `translate(${d.x},${d.y})`);
+            // }
+
+            galaxies.map(({ nodeCount, r, x, y }) => {
+                const nodes = [
+                    { r: r * 0.5, fx: x, fy: y }
+                ]
+                const links = []
+
+                for (let i = 0; i < nodeCount; i++) {
+                    nodes.push({
+                        r: Math.max(r * 0.5 * 0.5 * Math.random(), 25),
+                        x,
+                        y,
+                    })
+
+                    links.push({
+                        source: 0, target: i,
+                    })
+                }
+
+                return { nodes, links }
+            }).forEach(({ nodes, links }, index) => {
+                // start simulation
+                // create svg nodes
+                const [ mainNode ] = nodes
+
+                const groupNode = d3
+                    .select('svg')
+                    .append('g')
+                    .attr('style', `filter: url(#goo); transform-origin: ${mainNode.fx}px ${mainNode.fy}px`)
+                    .attr('data-galaxy-id', index)
+                    .attr('class', 'rotate')
+
+                    nodes.forEach(({ r }) =>
+                        groupNode
+                            .append('circle')
+                            .attr('r', r)
+                            .attr('class', `circle circle-${index}`)
+                    )
+
+                    d3.forceSimulation(nodes)
+                        .force('center', d3.forceCenter(mainNode.fx, mainNode.fy))
+                        // .force("charge", d3.forceManyBody().strength(d => -d.r * 50)) //if many little bubbles
+                        // .force("charge", d3.forceManyBody().strength(-100))
+                        // .force("link", d3.forceLink(links).distance(link => link.source.r + link.target.r))
+                        .force('collide', d3.forceCollide(d => d.r + 20))
+                        .alphaDecay(1 - Math.pow(0.001, 1 / 150))
+                        .velocityDecay(0.95)
+                        // .alphaDecay(1 - Math.pow(0.001, 1 / 100)) // 1 - Math.pow(0.001, 1 / 100)
+                        .on('tick', ticked);
+
+                    var nodeElements = d3
+                        .selectAll(`[data-galaxy-id="${index}"`)
+                        .selectAll('.circle')
+                        .data(nodes)
+
+                    function ticked () {
+                        nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
+                    }
+            })
+/*
         nodes = [
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 90},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 100},
-            { fx: 1240 / 2 - 200, fy: 800 / 2, r: 140},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 70},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 30},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 40},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 20},
-            { x:  1240 / 2 - 200, y:  800 / 2, r: 60},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 90},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 100},
+            { fx: canvas.width / 2 - 200, fy: canvas.height / 2, r: 140},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 70},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 30},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 40},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 20},
+            { x:  canvas.width / 2 - 200, y:  canvas.height / 2, r: 60},
         ]
 
         links = [
@@ -78,7 +235,7 @@
             .data(nodes)
 
         var simulation = d3.forceSimulation(nodes)
-            .force('center', d3.forceCenter(1240 / 2 - 200, 800 / 2))
+            .force('center', d3.forceCenter(canvas.width / 2 - 200, canvas.height / 2))
             // .force("charge", d3.forceManyBody().strength(d => -d.r * 50)) //if many little bubbles
             .force("charge", d3.forceManyBody().strength(-1000))
             .force("link", d3.forceLink(links).distance(link => link.source.r + link.target.r + 35))
@@ -91,34 +248,7 @@
           function ticked () {
             node.attr('transform', d => `translate(${d.x},${d.y})`);
           }
-
-          var i = 7
-          var linkIndex = 6
-          function addOne () {
-            const index = ++i
-            const r = Math.random() * 100
-
-            var svg = document.getElementsByTagName('svg')[0]; //Get svg element
-            var newElement = document.createElementNS("http://www.w3.org/2000/svg", 'circle'); //Create a path in SVG's namespace
-            newElement.setAttribute("r",r); //Set path's data
-            newElement.classList.add('circle')
-            bubbles.appendChild(newElement);
-            const newNode = { x: 1240 / 2, y: 800 / 2, vx: 0, vy: 0, index, r}
-
-            nodes.push(
-                newNode
-            )
-            // links.push(
-                // { source: nodes[2], target: newNode, index: ++linkIndex },
-            // )
-            node = d3
-                .selectAll('circle')
-                .data(nodes)
-
-            simulation.restart()
-          }
+          */
     </script>
-    <button onclick="addOne()">add one</button>
-
 </body>
 </html>
